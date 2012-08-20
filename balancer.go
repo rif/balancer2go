@@ -1,25 +1,24 @@
-// Simple balancer
+// Simple RPC client balancer
 package balancer2go
 
 import (
-	"log"
 	"sync"
 )
 
+// The main balancer type
 type Balancer struct {
 	sync.RWMutex
 	clients         map[string]Worker
 	balancerChannel chan Worker
 }
 
+// Interface for RPC clients
 type Worker interface {
 	Call(serviceMethod string, args interface{}, reply interface{}) error
 	Close() error
 }
 
-/*
-Constructor for RateList holding one slice for addreses and one slice for connections.
-*/
+// Constructor for RateList holding one slice for addreses and one slice for connections.
 func NewBalancer() *Balancer {
 	r := &Balancer{clients: make(map[string]Worker), balancerChannel: make(chan Worker)} // leaving both slices to nil
 	go func() {
@@ -36,9 +35,7 @@ func NewBalancer() *Balancer {
 	return r
 }
 
-/*
-Adds a client to the two  internal slices.
-*/
+// Adds a client to the two internal map.
 func (bl *Balancer) AddClient(address string, client Worker) {
 	bl.Lock()
 	defer bl.Unlock()
@@ -46,9 +43,7 @@ func (bl *Balancer) AddClient(address string, client Worker) {
 	return
 }
 
-/*
-Removes a client from the slices locking the readers and reseting the balancer index.
-*/
+// Removes a client from the map locking the readers and reseting the balancer index.
 func (bl *Balancer) RemoveClient(address string) {
 	bl.Lock()
 	defer bl.Unlock()
@@ -56,9 +51,7 @@ func (bl *Balancer) RemoveClient(address string) {
 	<-bl.balancerChannel
 }
 
-/*
-Returns a client for the specifed address.
-*/
+// Returns a client for the specifed address.
 func (bl *Balancer) GetClient(address string) (c Worker, exists bool) {
 	bl.RLock()
 	defer bl.RUnlock()
@@ -66,25 +59,24 @@ func (bl *Balancer) GetClient(address string) (c Worker, exists bool) {
 	return
 }
 
-/*
-Returns the next available connection at each call looping at the end of connections.
-*/
+// Returns the next available connection at each call looping at the end of connections.
 func (bl *Balancer) Balance() (result Worker) {
 	bl.RLock()
 	defer bl.RUnlock()
 	return <-bl.balancerChannel
 }
 
+// Sends a shotdown call to the clients
 func (bl *Balancer) Shutdown() {
 	bl.Lock()
 	defer bl.Unlock()
 	var reply string
-	for address, client := range bl.clients {
+	for _, client := range bl.clients {
 		client.Call("Responder.Shutdown", "", &reply)
-		log.Printf("Shutdown rater %v: %v ", address, reply)
 	}
 }
 
+// Returns a string slice with all client addresses
 func (bl *Balancer) GetClientAddresses() []string {
 	bl.RLock()
 	defer bl.RUnlock()
