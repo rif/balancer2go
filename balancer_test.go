@@ -1,4 +1,4 @@
-package balancer
+package balancer2go
 
 import (
 	"fmt"

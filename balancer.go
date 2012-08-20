@@ -1,5 +1,5 @@
 // Simple balancer
-package balancer
+package balancer2go
 
 import (
 	"log"
