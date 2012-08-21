@@ -67,12 +67,12 @@ func (bl *Balancer) Balance() (result Worker) {
 }
 
 // Sends a shotdown call to the clients
-func (bl *Balancer) Shutdown() {
+func (bl *Balancer) Shutdown(shutdownMethod string) {
 	bl.Lock()
 	defer bl.Unlock()
 	var reply string
 	for _, client := range bl.clients {
-		client.Call("Responder.Shutdown", "", &reply)
+		client.Call(shutdownMethod, "", &reply)
 	}
 }
 
